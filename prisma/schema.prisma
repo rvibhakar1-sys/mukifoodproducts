@@ -1,0 +1,440 @@
+// MUKIFOOD PRODUCTS - Database Schema
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── USERS & AUTH ───────────────────────────────────────────
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  password      String
+  name          String
+  role          String    @default("admin") // admin, staff, delivery
+  phone         String?
+  active        Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  statusChanges OrderStatusHistory[]
+  deliveries    Delivery[]
+}
+
+model Customer {
+  id              String    @id @default(uuid())
+  phone           String    @unique
+  name            String?
+  email           String?
+  loyaltyPoints   Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  addresses       Address[]
+  savedRecipients SavedRecipient[]
+  orders          Order[]
+  reviews         Review[]
+  loyaltyTxns     LoyaltyTransaction[]
+  subscriptions   Subscription[]
+  carts           Cart[]
+}
+
+model Address {
+  id          String    @id @default(uuid())
+  customerId  String
+  customer    Customer  @relation(fields: [customerId], references: [id])
+  label       String?   // Home, Office, etc.
+  name        String
+  phone       String
+  line1       String
+  line2       String?
+  city        String
+  state       String    @default("Tamil Nadu")
+  pincode     String
+  landmark    String?
+  isDefault   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+
+  orderRecipients OrderRecipient[]
+}
+
+model SavedRecipient {
+  id          String    @id @default(uuid())
+  customerId  String
+  customer    Customer  @relation(fields: [customerId], references: [id])
+  nickname    String    // "Amma", "Chennai Office"
+  name        String
+  phone       String
+  line1       String
+  line2       String?
+  city        String
+  state       String    @default("Tamil Nadu")
+  pincode     String
+  landmark    String?
+  createdAt   DateTime  @default(now())
+}
+
+// ─── PRODUCTS ───────────────────────────────────────────────
+model Category {
+  id          String    @id @default(uuid())
+  nameEn      String
+  nameTa      String
+  slug        String    @unique
+  image       String?
+  sortOrder   Int       @default(0)
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  products    Product[]
+}
+
+model Product {
+  id              String    @id @default(uuid())
+  categoryId      String
+  category        Category  @relation(fields: [categoryId], references: [id])
+  nameEn          String
+  nameTa          String
+  slug            String    @unique
+  descriptionEn   String
+  descriptionTa   String
+  ingredientsEn   String?
+  ingredientsTa   String?
+  shelfLife       String?
+  images          String    @default("[]") // JSON array of image paths
+  featured        Boolean   @default(false)
+  active          Boolean   @default(true)
+  sortOrder       Int       @default(0)
+  gstPercent      Float     @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  variants        ProductVariant[]
+  reviews         Review[]
+  bundleItems     BundleItem[]
+  subscriptions   Subscription[]
+}
+
+model ProductVariant {
+  id          String    @id @default(uuid())
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  nameEn      String    // "250g", "500g", "1kg"
+  nameTa      String
+  sku         String    @unique
+  price       Float
+  mrp         Float?
+  weight      Float     // in grams
+  stock       Int       @default(0)
+  lowStockThreshold Int @default(5)
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  inventoryBatches InventoryBatch[]
+  orderItems       OrderItem[]
+  cartItems        CartItem[]
+  subscriptions    Subscription[]
+}
+
+model InventoryBatch {
+  id          String    @id @default(uuid())
+  variantId   String
+  variant     ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  batchNumber String
+  quantity    Int
+  packedOn    DateTime?
+  expiresOn   DateTime?
+  notes       String?
+  createdAt   DateTime  @default(now())
+}
+
+// ─── BUNDLES ────────────────────────────────────────────────
+model Bundle {
+  id          String    @id @default(uuid())
+  nameEn      String
+  nameTa      String
+  slug        String    @unique
+  descriptionEn String?
+  descriptionTa String?
+  image       String?
+  price       Float
+  mrp         Float?
+  active      Boolean   @default(true)
+  festivalTag String?   // "pongal", "deepavali"
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  items       BundleItem[]
+  orderItems  OrderItem[]
+}
+
+model BundleItem {
+  id          String    @id @default(uuid())
+  bundleId    String
+  bundle      Bundle    @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id])
+  quantity    Int       @default(1)
+}
+
+// ─── CART ───────────────────────────────────────────────────
+model Cart {
+  id          String    @id @default(uuid())
+  customerId  String?
+  customer    Customer? @relation(fields: [customerId], references: [id])
+  sessionId   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  items       CartItem[]
+}
+
+model CartItem {
+  id          String    @id @default(uuid())
+  cartId      String
+  cart        Cart      @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  variantId   String
+  variant     ProductVariant @relation(fields: [variantId], references: [id])
+  bundleId    String?
+  quantity    Int       @default(1)
+  createdAt   DateTime  @default(now())
+}
+
+// ─── ORDERS ─────────────────────────────────────────────────
+model Order {
+  id              String    @id @default(uuid())
+  orderNumber     String    @unique
+  customerId      String?
+  customer        Customer? @relation(fields: [customerId], references: [id])
+  
+  // Guest details (if no customer account)
+  guestName       String?
+  guestPhone      String?
+  guestEmail      String?
+  
+  orderType       String    @default("self") // self, gift
+  status          String    @default("placed") // placed, confirmed, packed, out_for_delivery, delivered, cancelled, returned, rejected
+  
+  subtotal        Float
+  deliveryCharge  Float     @default(0)
+  discount        Float     @default(0)
+  gstAmount       Float     @default(0)
+  total           Float
+  
+  couponId        String?
+  coupon          Coupon?   @relation(fields: [couponId], references: [id])
+  couponCode      String?
+  loyaltyPointsUsed Int     @default(0)
+  loyaltyDiscount Float     @default(0)
+  
+  giftMessage     String?
+  hidePrices      Boolean   @default(false) // for gift orders
+  festivalTheme   String?   // pongal, deepavali, etc.
+  
+  notes           String?   // customer notes
+  adminNotes      String?   // internal notes
+  
+  paymentMethod   String?   // cod, upi, online
+  paymentStatus   String    @default("pending") // pending, paid, failed, refunded
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  items           OrderItem[]
+  recipients      OrderRecipient[]
+  statusHistory   OrderStatusHistory[]
+  payments        Payment[]
+  delivery        Delivery?
+}
+
+model OrderItem {
+  id          String    @id @default(uuid())
+  orderId     String
+  order       Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variantId   String?
+  variant     ProductVariant? @relation(fields: [variantId], references: [id])
+  bundleId    String?
+  bundle      Bundle?   @relation(fields: [bundleId], references: [id])
+  nameEn      String    // snapshot at time of order
+  nameTa      String
+  quantity    Int
+  price       Float     // unit price at time of order
+  total       Float
+}
+
+model OrderRecipient {
+  id            String    @id @default(uuid())
+  orderId       String
+  order         Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  recipientType String    // sender, receiver
+  name          String
+  phone         String
+  addressId     String?
+  address       Address?  @relation(fields: [addressId], references: [id])
+  line1         String?
+  line2         String?
+  city          String?
+  state         String?
+  pincode       String?
+  landmark      String?
+}
+
+model OrderStatusHistory {
+  id          String    @id @default(uuid())
+  orderId     String
+  order       Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status      String
+  note        String?
+  changedById String?
+  changedBy   User?     @relation(fields: [changedById], references: [id])
+  createdAt   DateTime  @default(now())
+}
+
+// ─── PAYMENTS ───────────────────────────────────────────────
+model Payment {
+  id              String    @id @default(uuid())
+  orderId         String
+  order           Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  method          String    // cod, upi, razorpay
+  amount          Float
+  status          String    @default("pending") // pending, completed, failed, refunded
+  transactionId   String?
+  razorpayOrderId String?
+  razorpayPaymentId String?
+  upiRef          String?
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+// ─── DELIVERY ───────────────────────────────────────────────
+model Delivery {
+  id              String    @id @default(uuid())
+  orderId         String    @unique
+  order           Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  deliveryPersonId String?
+  deliveryPerson  User?     @relation(fields: [deliveryPersonId], references: [id])
+  courierName     String?
+  trackingId      String?
+  otp             String?   // 4-digit delivery OTP
+  otpVerified     Boolean   @default(false)
+  estimatedDate   DateTime?
+  deliveredAt     DateTime?
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+// ─── COUPONS ────────────────────────────────────────────────
+model Coupon {
+  id              String    @id @default(uuid())
+  code            String    @unique
+  descriptionEn   String?
+  descriptionTa   String?
+  discountType    String    // percentage, flat
+  discountValue   Float
+  minOrderAmount  Float     @default(0)
+  maxDiscount     Float?
+  usageLimit      Int?
+  usedCount       Int       @default(0)
+  validFrom       DateTime  @default(now())
+  validUntil      DateTime?
+  active          Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+
+  orders          Order[]
+}
+
+// ─── REVIEWS ────────────────────────────────────────────────
+model Review {
+  id          String    @id @default(uuid())
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  customerId  String
+  customer    Customer  @relation(fields: [customerId], references: [id])
+  orderId     String?
+  rating      Int       // 1-5
+  comment     String?
+  approved    Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+}
+
+// ─── LOYALTY ────────────────────────────────────────────────
+model LoyaltyTransaction {
+  id          String    @id @default(uuid())
+  customerId  String
+  customer    Customer  @relation(fields: [customerId], references: [id])
+  orderId     String?
+  type        String    // earn, redeem
+  points      Int
+  description String?
+  createdAt   DateTime  @default(now())
+}
+
+// ─── SUBSCRIPTIONS ──────────────────────────────────────────
+model Subscription {
+  id          String    @id @default(uuid())
+  customerId  String
+  customer    Customer  @relation(fields: [customerId], references: [id])
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id])
+  variantId   String
+  variant     ProductVariant @relation(fields: [variantId], references: [id])
+  quantity    Int       @default(1)
+  frequency   String    @default("monthly") // monthly, biweekly
+  nextDelivery DateTime?
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// ─── WHOLESALE ──────────────────────────────────────────────
+model WholesaleEnquiry {
+  id          String    @id @default(uuid())
+  name        String
+  phone       String
+  email       String?
+  businessName String?
+  businessType String?  // shop, caterer, temple, other
+  message     String
+  products    String?   // interested products
+  quantity    String?   // approximate quantity
+  status      String    @default("new") // new, contacted, quoted, closed
+  adminNotes  String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// ─── NOTIFICATIONS ──────────────────────────────────────────
+model Notification {
+  id          String    @id @default(uuid())
+  type        String    // new_order, status_change, low_stock, enquiry
+  title       String
+  message     String
+  data        String?   // JSON metadata
+  read        Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+}
+
+// ─── SETTINGS ───────────────────────────────────────────────
+model Setting {
+  id          String    @id @default(uuid())
+  key         String    @unique
+  value       String
+  updatedAt   DateTime  @updatedAt
+}
+
+// ─── PINCODE ZONES ──────────────────────────────────────────
+model PincodeZone {
+  id              String    @id @default(uuid())
+  pincode         String    @unique
+  zoneName        String    // local, state, national
+  deliveryCharge  Float
+  estimatedDays   Int       @default(3)
+  serviceable     Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+}
