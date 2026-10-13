@@ -36,7 +36,7 @@ export default function AdminLoginPage() {
           {error && <div className="p-3 bg-red-500/20 border border-red-500/30 rounded-lg text-red-300 text-sm text-center">{error}</div>}
           <div>
             <label className="block text-sm font-medium text-earth-300 mb-1.5">Email</label>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-earth-500 focus:outline-none focus:border-jaggery-400 focus:ring-2 focus:ring-jaggery-400/20" placeholder="admin@mukifood.com" required />
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-earth-500 focus:outline-none focus:border-jaggery-400 focus:ring-2 focus:ring-jaggery-400/20" placeholder="admin01@gmail.com" required />
           </div>
           <div>
             <label className="block text-sm font-medium text-earth-300 mb-1.5">Password</label>
@@ -45,7 +45,7 @@ export default function AdminLoginPage() {
           <button type="submit" disabled={loading} className="w-full py-3.5 bg-gradient-to-r from-jaggery-500 to-jaggery-700 text-white rounded-xl font-bold text-lg hover:from-jaggery-600 hover:to-jaggery-800 transition-all shadow-lg disabled:opacity-50">
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
-          <p className="text-xs text-earth-500 text-center">Demo: admin@mukifood.com / MukiFood@2024</p>
+          <p className="text-xs text-earth-500 text-center">Demo: admin01@gmail.com / admin@123</p>
         </form>
       </div>
     </div>

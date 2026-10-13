@@ -7,12 +7,16 @@ async function main() {
   console.log('🌱 Seeding database...')
 
   // 1. Create admin user
-  const hashedPassword = await bcrypt.hash('MukiFood@2024', 12)
+  const adminEmail = process.env.ADMIN_EMAIL || 'admin01@gmail.com'
+  const adminPassword = process.env.ADMIN_PASSWORD || 'admin@123'
+  const hashedPassword = await bcrypt.hash(adminPassword, 12)
   const admin = await prisma.user.upsert({
-    where: { email: 'admin@mukifood.com' },
-    update: {},
+    where: { email: adminEmail },
+    update: {
+      password: hashedPassword,
+    },
     create: {
-      email: 'admin@mukifood.com',
+      email: adminEmail,
       password: hashedPassword,
       name: 'Mukifood Admin',
       role: 'admin',
@@ -314,153 +318,9 @@ async function main() {
   })
   console.log('✅ Bundle created')
 
-  // 11. Create sample customer and order
-  const customer = await prisma.customer.upsert({
-    where: { phone: '9876500001' },
-    update: {},
-    create: {
-      phone: '9876500001',
-      name: 'Anitha M',
-      email: 'anitha@example.com',
-      loyaltyPoints: 50,
-    },
-  })
-
-  const variant250 = await prisma.productVariant.findUnique({ where: { sku: 'NS-250' } })
-  const variant500 = await prisma.productVariant.findUnique({ where: { sku: 'NS-500' } })
-
-  if (variant250 && variant500) {
-    const order = await prisma.order.create({
-      data: {
-        orderNumber: 'MKF20241001001',
-        customerId: customer.id,
-        orderType: 'self',
-        status: 'delivered',
-        subtotal: 245,
-        deliveryCharge: 40,
-        total: 285,
-        paymentMethod: 'upi',
-        paymentStatus: 'paid',
-        items: {
-          create: [
-            {
-              variantId: variant250.id,
-              nameEn: 'Nattu Sakarai - 250g',
-              nameTa: 'நாட்டு சர்க்கரை - 250 கிராம்',
-              quantity: 1,
-              price: 85,
-              total: 85,
-            },
-            {
-              variantId: variant500.id,
-              nameEn: 'Nattu Sakarai - 500g',
-              nameTa: 'நாட்டு சர்க்கரை - 500 கிராம்',
-              quantity: 1,
-              price: 160,
-              total: 160,
-            },
-          ],
-        },
-        recipients: {
-          create: {
-            recipientType: 'receiver',
-            name: 'Anitha M',
-            phone: '9876500001',
-            line1: '123, Gandhi Street',
-            city: 'Chennai',
-            state: 'Tamil Nadu',
-            pincode: '600001',
-          },
-        },
-        statusHistory: {
-          create: [
-            { status: 'placed', note: 'Order placed', changedById: admin.id },
-            { status: 'confirmed', note: 'Order confirmed', changedById: admin.id },
-            { status: 'packed', note: 'Order packed', changedById: admin.id },
-            { status: 'out_for_delivery', note: 'Out for delivery', changedById: admin.id },
-            { status: 'delivered', note: 'Delivered successfully', changedById: admin.id },
-          ],
-        },
-        payments: {
-          create: {
-            method: 'upi',
-            amount: 285,
-            status: 'completed',
-            upiRef: 'UPI123456789',
-          },
-        },
-      },
-    })
-
-    // Create a gift order sample
-    const giftOrder = await prisma.order.create({
-      data: {
-        orderNumber: 'MKF20241002001',
-        customerId: customer.id,
-        orderType: 'gift',
-        status: 'confirmed',
-        subtotal: 299,
-        deliveryCharge: 60,
-        total: 359,
-        paymentMethod: 'cod',
-        paymentStatus: 'pending',
-        giftMessage: 'Happy Birthday Amma! 🎂 With love from your daughter.',
-        hidePrices: true,
-        items: {
-          create: {
-            variantId: variant500.id,
-            nameEn: 'Nattu Sakarai - 1 Kg',
-            nameTa: 'நாட்டு சர்க்கரை - 1 கிலோ',
-            quantity: 1,
-            price: 299,
-            total: 299,
-          },
-        },
-        recipients: {
-          create: [
-            {
-              recipientType: 'sender',
-              name: 'Anitha M',
-              phone: '9876500001',
-            },
-            {
-              recipientType: 'receiver',
-              name: 'Lakshmi R',
-              phone: '9876500002',
-              line1: '45, Temple Street',
-              city: 'Madurai',
-              state: 'Tamil Nadu',
-              pincode: '625001',
-              landmark: 'Near Meenakshi Temple',
-            },
-          ],
-        },
-        statusHistory: {
-          create: [
-            { status: 'placed', note: 'Gift order placed', changedById: admin.id },
-            { status: 'confirmed', note: 'Order confirmed by admin', changedById: admin.id },
-          ],
-        },
-      },
-    })
-    console.log('✅ Sample orders created')
-  }
-
-  // 12. Create sample review
-  await prisma.review.create({
-    data: {
-      productId: nattuSakarai.id,
-      customerId: customer.id,
-      rating: 5,
-      comment: 'Best jaggery I have ever tasted! Reminds me of my childhood. The quality is amazing and packaging was great too.',
-      approved: true,
-    },
-  })
-  console.log('✅ Sample review created')
-
   console.log('\n🎉 Database seeded successfully!')
   console.log('\n📋 Login credentials:')
-  console.log('   Admin: admin@mukifood.com / MukiFood@2024')
+  console.log('   Admin: admin01@gmail.com / admin@123')
   console.log('   Delivery: delivery@mukifood.com / delivery123')
 }
 

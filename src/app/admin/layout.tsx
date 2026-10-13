@@ -76,7 +76,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <div className="w-8 h-8 rounded-full bg-jaggery-600 flex items-center justify-center text-sm font-bold">{session?.user?.name?.[0] || 'A'}</div>
             <div className="flex-1 min-w-0"><p className="text-sm font-medium truncate">{session?.user?.name}</p><p className="text-xs text-earth-400 truncate">{session?.user?.email}</p></div>
           </div>
-          <button onClick={() => signOut({ callbackUrl: '/admin/login' })} className="w-full px-4 py-2 text-sm text-earth-400 hover:text-white hover:bg-white/5 rounded-lg transition-all text-left">🚪 Logout</button>
+          <button 
+            onClick={() => signOut({ callbackUrl: '/login' })} 
+            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-400 hover:text-white hover:bg-red-500/20 rounded-lg transition-all text-left font-medium"
+          >
+            🚪 Logout
+          </button>
         </div>
       </aside>
 
@@ -95,7 +100,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               {notifications > 0 && (
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-red-100 text-red-700 rounded-full text-sm font-medium animate-pulse">🔔 {notifications} new</div>
               )}
-              <Link href="/" target="_blank" className="text-sm text-earth-500 hover:text-jaggery-600">View Store →</Link>
+              <Link href="/" target="_blank" className="hidden sm:inline-flex items-center gap-1 text-sm text-earth-500 hover:text-jaggery-600 transition-colors">
+                View Store →
+              </Link>
+              <div className="hidden md:flex items-center gap-2 px-2.5 py-1.5 bg-cream-100 rounded-lg text-xs text-earth-700">
+                <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                <span className="font-medium truncate max-w-[120px]">{session?.user?.name || 'Admin'}</span>
+              </div>
+              <button
+                onClick={() => signOut({ callbackUrl: '/login' })}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-semibold text-red-600 bg-red-50 hover:bg-red-100 hover:border-red-300 border border-red-200 rounded-lg transition-all shadow-sm active:scale-95 cursor-pointer"
+                title="Logout from Admin"
+              >
+                <span>🚪</span>
+                <span>Logout</span>
+              </button>
             </div>
           </div>
         </header>
